@@ -49,6 +49,8 @@
 
   var FRAG = [
     'precision mediump float;',
+    'uniform vec3 uBase;',
+    'uniform vec3 uHot;',
     'varying float vDepth;',
     'varying float vGlow;',
     'void main(){',
@@ -56,9 +58,7 @@
     '  float r = length(uv);',
     '  if (r > 0.5) discard;',
     '  float soft = smoothstep(0.5, 0.06, r);',
-    '  vec3 base = vec3(0.58, 0.65, 0.74);',
-    '  vec3 hot  = vec3(0.62, 0.91, 1.00);',
-    '  vec3 col  = mix(base, hot, clamp(vGlow*1.4, 0.0, 1.0));',
+    '  vec3 col  = mix(uBase, uHot, clamp(vGlow*1.4, 0.0, 1.0));',
     '  float a = soft * (0.12 + vDepth*0.40 + vGlow*0.95);',
     '  gl_FragColor = vec4(col, a);',
     '}'
@@ -120,6 +120,15 @@
   var uMouse  = gl.getUniformLocation(prog, 'uMouse');
   var uAspect = gl.getUniformLocation(prog, 'uAspect');
   var uDpr    = gl.getUniformLocation(prog, 'uDpr');
+  var uBase   = gl.getUniformLocation(prog, 'uBase');
+  var uHot    = gl.getUniformLocation(prog, 'uHot');
+
+  // Plata neutra por defecto. El azul fijo de antes tenia demasiado peso;
+  // ahora el color lo decide el video sobre el que esta el cursor.
+  var DEF_BASE = [0.70, 0.72, 0.76];
+  var DEF_HOT  = [0.88, 0.92, 0.97];
+  var curBase = DEF_BASE.slice(), curHot = DEF_HOT.slice();
+  var tgtBase = DEF_BASE.slice(), tgtHot = DEF_HOT.slice();
 
   gl.disable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND);
@@ -165,8 +174,22 @@
     gl.uniform2f(uMouse, mx, my);
     gl.uniform1f(uAspect, aspect);
     gl.uniform1f(uDpr, dpr);
+    gl.uniform3fv(uBase, curBase);
+    gl.uniform3fv(uHot, curHot);
     gl.drawArrays(gl.POINTS, 0, COUNT);
   }
+
+  // cards.js llama aqui cuando el cursor entra o sale de un reel
+  window.fieldTint = {
+    set: function (base, hot) {
+      tgtBase = base; tgtHot = hot;
+      if (reduced) { curBase = base.slice(); curHot = hot.slice(); draw(0); }
+    },
+    reset: function () {
+      tgtBase = DEF_BASE.slice(); tgtHot = DEF_HOT.slice();
+      if (reduced) { curBase = tgtBase.slice(); curHot = tgtHot.slice(); draw(0); }
+    }
+  };
 
   if (reduced) {
     draw(0); // un fotograma quieto y nada mas
@@ -178,6 +201,10 @@
     if (!running) return;
     mx += (tx - mx) * 0.06; // el cursor arrastra con inercia
     my += (ty - my) * 0.06;
+    for (var k = 0; k < 3; k++) {   // el color viaja despacio, sin saltos
+      curBase[k] += (tgtBase[k] - curBase[k]) * 0.045;
+      curHot[k]  += (tgtHot[k]  - curHot[k])  * 0.045;
+    }
     draw((now - start) / 1000);
     requestAnimationFrame(frame);
   }

@@ -55,7 +55,62 @@
     current = card;
   }
 
+  /* ---- El campo de puntos toma el color del reel que miras ----
+     Se dibuja el fotograma actual en un lienzo de 24x24 y se promedia dando
+     peso a lo saturado y con algo de luz: si no, el negro del fondo manda
+     siempre y todo sale gris. Mismo origen, asi que el lienzo no se contamina. */
+  var sampler = document.createElement('canvas');
+  sampler.width = 24; sampler.height = 24;
+  var sctx = sampler.getContext('2d', { willReadFrequently: true });
+  var hovered = null;
+  var tinting = false;
+
+  function lighten(c, t) { return c + (1 - c) * t; }
+
+  function palette(v) {
+    if (!v || v.readyState < 2 || !v.videoWidth) return null;
+    var d;
+    try {
+      sctx.drawImage(v, 0, 0, 24, 24);
+      d = sctx.getImageData(0, 0, 24, 24).data;
+    } catch (e) { return null; }
+    var r = 0, g = 0, b = 0, w = 0;
+    for (var i = 0; i < d.length; i += 4) {
+      var R = d[i] / 255, G = d[i + 1] / 255, B = d[i + 2] / 255;
+      var mx = Math.max(R, G, B), mn = Math.min(R, G, B);
+      var k = 0.08 + (mx - mn) * 2.2 * (mx > 0.10 ? 1 : 0.15);
+      r += R * k; g += G * k; b += B * k; w += k;
+    }
+    if (!w) return null;
+    r /= w; g /= w; b /= w;
+    var peak = Math.max(r, g, b);
+    if (peak < 0.02) return null;
+    r /= peak; g /= peak; b /= peak; // sube el tono para que no quede apagado
+    return {
+      hot:  [lighten(r, .04), lighten(g, .04), lighten(b, .04)],
+      base: [lighten(r, .26), lighten(g, .26), lighten(b, .26)]
+    };
+  }
+
+  // El cursor manda; si no hay cursor encima (movil), manda la que suena.
+  function source() { return hovered || current; }
+
+  setInterval(function () {
+    if (!window.fieldTint) return;
+    var card = source();
+    if (!card) {
+      if (tinting) { window.fieldTint.reset(); tinting = false; }
+      return;
+    }
+    var p = palette(videoOf(card));
+    if (p) { window.fieldTint.set(p.base, p.hot); tinting = true; }
+  }, 240);
+
   cards.forEach(function (card) {
+    card.addEventListener('mouseenter', function () { hovered = card; });
+    card.addEventListener('mouseleave', function () { if (hovered === card) hovered = null; });
+    card.addEventListener('focus', function () { hovered = card; });
+    card.addEventListener('blur', function () { if (hovered === card) hovered = null; });
     card.addEventListener('click', function () {
       if (card.classList.contains('sound-on')) silence(card);
       else voice(card);
