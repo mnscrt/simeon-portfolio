@@ -79,40 +79,131 @@ html.js.revealed #page{
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
-  gap:20px;
+  grid-template-columns:repeat(3,1fr);
+  gap:22px;
+}
+@media (max-width:900px){.grid{grid-template-columns:repeat(2,1fr);gap:16px}}
+@media (max-width:560px){.grid{grid-template-columns:1fr;gap:18px}}
+
+/* Tarjeta de reel. Vertical 9:16 porque los videos son verticales:
+   forzarlos a 16:9 recortaria el encuadre del editor. */
+.card{
+  position:relative;
+  display:block;
+  width:100%;
+  aspect-ratio:9/16;
+  padding:0;
+  margin:0;
+  border:1px solid var(--hairline);
+  border-radius:14px;
+  overflow:hidden;
+  background:#0a0b0e;
+  cursor:pointer;
+  font:inherit;
+  color:inherit;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .55s cubic-bezier(.22,1,.36,1),
+             border-color .5s ease,
+             box-shadow .5s ease;
+}
+.card:hover,.card:focus-visible{
+  transform:translateY(-6px);
+  border-color:rgba(159,232,255,.42);
+  box-shadow:0 20px 55px -22px rgba(159,232,255,.45);
+}
+.card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.card:active{transform:translateY(-2px) scale(.994)}
+
+.card-video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  transition:transform .8s cubic-bezier(.22,1,.36,1);
+}
+.card:hover .card-video{transform:scale(1.05)}
+
+/* El unico cuadrado del lote: contain para no comerle casi la mitad del encuadre */
+.card.is-square .card-video{object-fit:contain;background:#0a0b0e}
+
+/* La tarjeta con sonido se marca sola */
+.card.sound-on{border-color:rgba(159,232,255,.75)}
+.card.sound-on::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:13px;
+  box-shadow:inset 0 0 0 1px rgba(159,232,255,.45);
+  pointer-events:none;
 }
 
-.box{
-  aspect-ratio:16/9;
-  border:1px solid var(--hairline);
-  border-radius:10px;
-  background:rgba(255,255,255,.014);
-  transition:border-color .55s ease,background-color .55s ease,transform .55s cubic-bezier(.22,1,.36,1);
+/* Ecualizador: solo se mueve cuando ese reel suena */
+.card-sound{
+  position:absolute;
+  top:12px;
+  right:12px;
+  display:flex;
+  align-items:flex-end;
+  gap:3px;
+  height:16px;
+  opacity:0;
+  transition:opacity .4s ease;
+  pointer-events:none;
 }
-.box:hover{
-  border-color:rgba(159,232,255,.3);
-  background:rgba(255,255,255,.032);
-  transform:translateY(-4px);
+.card.sound-on .card-sound{opacity:1}
+.card-sound i{width:2.5px;height:4px;border-radius:2px;background:var(--accent);display:block}
+.card.sound-on .card-sound i{animation:eq .9s ease-in-out infinite}
+.card-sound i:nth-child(2){animation-delay:.12s}
+.card-sound i:nth-child(3){animation-delay:.26s}
+.card-sound i:nth-child(4){animation-delay:.38s}
+@keyframes eq{0%,100%{height:4px}50%{height:15px}}
+
+.card-hint{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:16px 14px 13px;
+  font-size:.6rem;
+  font-weight:400;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.88);
+  background:linear-gradient(transparent,rgba(0,0,0,.78));
+  opacity:0;
+  transform:translateY(6px);
+  transition:opacity .45s ease,transform .45s cubic-bezier(.22,1,.36,1);
+  pointer-events:none;
+  text-align:left;
+}
+.card:hover .card-hint,.card:focus-visible .card-hint{opacity:1;transform:none}
+.card.sound-on .card-hint{opacity:0;transform:translateY(6px)}
+
+/* Sin puntero fino (movil) la pista se queda fija: no hay hover que la revele */
+@media (hover:none){
+  .card-hint{opacity:1;transform:none}
+  .card.sound-on .card-hint{opacity:0}
 }
 
 /* Entrada escalonada del contenido */
-html.js .name,html.js .role,html.js .box{opacity:0;transform:translateY(14px)}
+html.js .name,html.js .role,html.js .card{opacity:0;transform:translateY(14px)}
 html.js.revealed .name,
 html.js.revealed .role,
-html.js.revealed .box{
+html.js.revealed .card{
   opacity:1;
   transform:none;
   transition:opacity .95s ease,transform .95s cubic-bezier(.22,1,.36,1);
 }
 html.js.revealed .name{transition-delay:.3s}
 html.js.revealed .role{transition-delay:.45s}
-html.js.revealed .box:nth-child(1){transition-delay:.60s}
-html.js.revealed .box:nth-child(2){transition-delay:.66s}
-html.js.revealed .box:nth-child(3){transition-delay:.72s}
-html.js.revealed .box:nth-child(4){transition-delay:.78s}
-html.js.revealed .box:nth-child(5){transition-delay:.84s}
-html.js.revealed .box:nth-child(6){transition-delay:.90s}
+html.js.revealed .card:nth-child(1){transition-delay:.60s}
+html.js.revealed .card:nth-child(2){transition-delay:.66s}
+html.js.revealed .card:nth-child(3){transition-delay:.72s}
+html.js.revealed .card:nth-child(4){transition-delay:.78s}
+html.js.revealed .card:nth-child(5){transition-delay:.84s}
+html.js.revealed .card:nth-child(6){transition-delay:.90s}
 
 /* ---------- Animacion de entrada: keyframes ---------- */
 #intro{position:fixed;inset:0;z-index:50;pointer-events:none}
