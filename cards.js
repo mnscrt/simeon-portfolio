@@ -30,6 +30,17 @@
     if (p && p.catch) p.catch(function () { /* el navegador puede negarse; el poster queda */ });
   }
 
+  function rewind(v) {
+    if (!v) return;
+    try {
+      if (v.readyState >= 1) { v.currentTime = 0; return; }
+    } catch (e) { return; }
+    v.addEventListener('loadedmetadata', function once() {
+      v.removeEventListener('loadedmetadata', once);
+      try { v.currentTime = 0; } catch (e) {}
+    });
+  }
+
   function silence(card) {
     if (!card) return;
     var v = videoOf(card);
@@ -47,6 +58,7 @@
     if (!v) return;
     v.muted = false;
     v.volume = 1;
+    rewind(v); // el clic enciende el audio y vuelve a empezar
     play(card);
     card.classList.add('sound-on');
     card.setAttribute('aria-pressed', 'true');
